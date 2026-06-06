@@ -6,6 +6,8 @@ import Header from '../components/dashboard/Header'
 import SummaryCards from '../components/dashboard/SummaryCards'
 import ChartNav from '../components/dashboard/ChartNav'
 import DetailPanel from '../components/dashboard/DetailPanel'
+import Modal from '../components/dashboard/Modal'
+import OutlierStoryCard from '../components/dashboard/OutlierStoryCard'
 import Correlation3D from '../components/charts3d/Correlation3D'
 import Scatter3D from '../components/charts3d/Scatter3D'
 import Histogram3D from '../components/charts3d/Histogram3D'
@@ -17,6 +19,8 @@ export default function Dashboard() {
   const result = useAnalysisStore((s) => s.result)
   const activeChart = useAnalysisStore((s) => s.activeChart)
   const reset = useAnalysisStore((s) => s.reset)
+  const selectedOutlierStory = useAnalysisStore((s) => s.selectedOutlierStory)
+  const setSelectedOutlierStory = useAnalysisStore((s) => s.setSelectedOutlierStory)
   const navigate = useNavigate()
   const [exporting, setExporting] = useState(false)
 
@@ -116,6 +120,14 @@ export default function Dashboard() {
           <DetailPanel />
         </div>
       </div>
+
+      <Modal
+        open={!!selectedOutlierStory}
+        onClose={() => setSelectedOutlierStory(null)}
+        title="异常点故事卡片"
+      >
+        {selectedOutlierStory && <OutlierStoryCard data={selectedOutlierStory} />}
+      </Modal>
     </div>
   )
 }

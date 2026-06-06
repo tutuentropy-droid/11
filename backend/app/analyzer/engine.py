@@ -12,7 +12,7 @@ from ..models.schemas import (
 )
 from .column_types import classify_all_columns
 from .stats import compute_numeric_stats, compute_missing_rate, get_sample_values
-from .outliers import detect_outliers
+from .outliers import detect_outliers, generate_outlier_stories
 from .correlation import compute_correlation
 from .categorical import compute_categorical_freq
 from .timeseries import analyze_timeseries
@@ -99,6 +99,8 @@ class AnalysisEngine:
         sampled_df = _sample_for_visualization(df)
         sampled_data = _df_to_records(sampled_df)
 
+        outlier_stories = generate_outlier_stories(df, col_types)
+
         partial_result = AnalysisResult(
             dataset=dataset_info,
             columns=columns_info,
@@ -107,6 +109,7 @@ class AnalysisEngine:
             timeseries=timeseries,
             summary=SummaryResult(headline="", insights=[]),
             sampled_data=sampled_data,
+            outlier_stories=outlier_stories,
         )
 
         summary = generate_summary(partial_result)

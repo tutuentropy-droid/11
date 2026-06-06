@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AnalysisResult, ChartType, Insight } from '../types'
+import type { AnalysisResult, ChartType, Insight, OutlierStoryCard } from '../types'
 
 interface AnalysisState {
   result: AnalysisResult | null
@@ -8,6 +8,7 @@ interface AnalysisState {
   activeChart: ChartType
   selectedPoint: Record<string, any> | null
   selectedInsight: Insight | null
+  selectedOutlierStory: OutlierStoryCard | null
   progress: number
 
   setResult: (r: AnalysisResult | null) => void
@@ -17,6 +18,7 @@ interface AnalysisState {
   setActiveChart: (c: ChartType) => void
   setSelectedPoint: (p: Record<string, any> | null) => void
   setSelectedInsight: (i: Insight | null) => void
+  setSelectedOutlierStory: (s: OutlierStoryCard | null) => void
   reset: () => void
 }
 
@@ -27,6 +29,7 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   activeChart: 'correlation',
   selectedPoint: null,
   selectedInsight: null,
+  selectedOutlierStory: null,
   progress: 0,
 
   setResult: (r) => set({ result: r }),
@@ -36,6 +39,7 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   setActiveChart: (c) => set({ activeChart: c }),
   setSelectedPoint: (p) => set({ selectedPoint: p }),
   setSelectedInsight: (i) => set({ selectedInsight: i }),
+  setSelectedOutlierStory: (s) => set({ selectedOutlierStory: s }),
   reset: () =>
     set({
       result: null,
@@ -44,6 +48,7 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
       activeChart: 'correlation',
       selectedPoint: null,
       selectedInsight: null,
+      selectedOutlierStory: null,
       progress: 0,
     }),
 }))

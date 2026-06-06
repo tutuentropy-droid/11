@@ -64,6 +64,18 @@ class SummaryResult(BaseModel):
     insights: List[Insight]
 
 
+class OutlierStoryCard(BaseModel):
+    row_index: int
+    column: str
+    story: str
+    actual_value: float
+    expected_min: float
+    expected_max: float
+    deviation_percent: float
+    direction: str
+    context_fields: Dict[str, Any] = Field(default_factory=dict)
+
+
 class AnalysisResult(BaseModel):
     task_id: Optional[str] = None
     dataset: DatasetInfo
@@ -73,3 +85,4 @@ class AnalysisResult(BaseModel):
     timeseries: Optional[TimeSeriesResult] = None
     summary: SummaryResult
     sampled_data: Optional[List[Dict[str, Any]]] = None
+    outlier_stories: List[OutlierStoryCard] = Field(default_factory=list)

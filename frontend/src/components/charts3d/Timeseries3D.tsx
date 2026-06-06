@@ -7,6 +7,7 @@ export default function Timeseries3D() {
   const ref = useRef<HTMLDivElement>(null)
   const chartRef = useRef<echarts.ECharts | null>(null)
   const result = useAnalysisStore((s) => s.result)
+  const setSelectedOutlierStory = useAnalysisStore((s) => s.setSelectedOutlierStory)
   const animRef = useRef<number | null>(null)
 
   const tsData = useMemo(() => {
@@ -14,6 +15,27 @@ export default function Timeseries3D() {
     if (!ts) return null
     return ts
   }, [result])
+
+  const tsOutlierMap = useMemo(() => {
+    const map = new Map<number, any>()
+    if (!result?.outlier_stories || !tsData) return map
+    const stories = result.outlier_stories.filter((s) => s.column === tsData.value_column)
+    const sampled = result.sampled_data || []
+    const timeCol = tsData.time_column
+
+    for (let i = 0; i < tsData.data_points.length; i++) {
+      const point = tsData.data_points[i]
+      const t = point.time
+      for (const story of stories) {
+        const row = sampled[story.row_index]
+        if (row && row[timeCol] && String(row[timeCol]).startsWith(String(t).slice(0, 10))) {
+          map.set(i, story)
+          break
+        }
+      }
+    }
+    return map
+  }, [result, tsData])
 
   useEffect(() => {
     if (!ref.current || !tsData) return
@@ -32,6 +54,9 @@ export default function Timeseries3D() {
     const minV = Math.min(...values)
     const maxV = Math.max(...values)
 
+    const outlierIndices = Array.from(tsOutlierMap.keys())
+    const outlierPoints: number[][] = outlierIndices.map((i) => [i, 3.5, points[i].value, i])
+
     const surfaceData: number[][] = []
     const n = points.length
     for (let i = 0; i < n; i++) {
@@ -46,6 +71,8 @@ export default function Timeseries3D() {
     const animate = () => {
       tick++
       const glow = 8 + Math.sin(tick / 15) * 4
+      const outlierOpacity = 0.5 + Math.sin(tick / 10) * 0.5
+      const outlierSize = 18 + Math.sin(tick / 8) * 6
       chart.setOption({
         series: [
           {
@@ -83,6 +110,23 @@ export default function Timeseries3D() {
               shadowColor: '#a78bfa',
             },
           },
+          ...(outlierPoints.length > 0
+            ? [
+                {
+                  type: 'scatter3D',
+                  name: '时序异常点',
+                  data: outlierPoints,
+                  symbolSize: outlierSize,
+                  itemStyle: {
+                    color: '#ef4444',
+                    opacity: outlierOpacity,
+                    shadowBlur: 25,
+                    shadowColor: '#ef4444',
+                  },
+                  emphasis: { itemStyle: { color: '#fff' } },
+                },
+              ]
+            : []),
           ...(forecast && forecast.values && forecast.values.length > 0
             ? [
                 {
@@ -132,7 +176,22 @@ export default function Timeseries3D() {
         borderColor: 'rgba(59,130,246,0.3)',
         textStyle: { color: '#e2e8f0' },
         formatter: (p: any) => {
-          const idx = Math.round(p.data?.[0] || 0)
+          const idx = Math.round(p.data?.[0] ?? p.data?.[3] ?? 0)
+          if (p.seriesName === '时序异常点') {
+            const story = tsOutlierMap.get(p.data[3])
+            const t = points[p.data[3]]?.time || ''
+            const v = points[p.data[3]]?.value
+            let html = `<div style="font-family:monospace;font-size:12px">`
+            html += `<div style="color:#ef4444;margin-bottom:6px">🚨 时序异常点</div>`
+            html += `<div>${t.slice(0, 16)}</div>`
+            html += `<div>${tsData.value_column}: <b style="color:#ef4444">${Number(v).toLocaleString()}</b></div>`
+            if (story) {
+              html += `<div style="margin-top:6px;border-top:1px solid rgba(239,68,68,0.2);padding-top:6px;color:#e2e8f0">${story.story.slice(0, 40)}...</div>`
+              html += `<div style="color:#94a3b8;margin-top:4px">点击查看完整故事卡片</div>`
+            }
+            html += '</div>'
+            return html
+          }
           if (p.seriesName === '预测线' && forecast) {
             const fIdx = idx - points.length
             const t = forecastTimes[fIdx] || points[points.length - 1]?.time
@@ -157,9 +216,11 @@ export default function Timeseries3D() {
         },
       },
       legend: {
-        data: ['历史数据', '趋势线', '预测线'].filter((n) =>
-          n === '预测线' ? forecast && forecast.values && forecast.values.length > 0 : true
-        ),
+        data: ['历史数据', '趋势线', '时序异常点', '预测线'].filter((n) => {
+          if (n === '预测线') return forecast && forecast.values && forecast.values.length > 0
+          if (n === '时序异常点') return outlierPoints.length > 0
+          return true
+        }),
         textStyle: { color: '#94a3b8' },
         top: 0,
         right: 10,
@@ -240,13 +301,23 @@ export default function Timeseries3D() {
 
     animate()
 
+    chart.on('click', (params: any) => {
+      if (params.seriesName === '时序异常点' && params.data) {
+        const idx = params.data[3]
+        const story = tsOutlierMap.get(idx)
+        if (story) {
+          setSelectedOutlierStory(story)
+        }
+      }
+    })
+
     const onResize = () => chart.resize()
     window.addEventListener('resize', onResize)
     return () => {
       window.removeEventListener('resize', onResize)
       if (animRef.current) cancelAnimationFrame(animRef.current)
     }
-  }, [tsData])
+  }, [tsData, tsOutlierMap, setSelectedOutlierStory])
 
   return <div ref={ref} className="w-full h-full" />
 }

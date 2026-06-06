@@ -8,6 +8,7 @@ export default function Scatter3D() {
   const chartRef = useRef<echarts.ECharts | null>(null)
   const result = useAnalysisStore((s) => s.result)
   const setSelectedPoint = useAnalysisStore((s) => s.setSelectedPoint)
+  const setSelectedOutlierStory = useAnalysisStore((s) => s.setSelectedOutlierStory)
   const animRef = useRef<number | null>(null)
 
   const { normalData, outlierData, xCol, yCol, zCol, outlierIndices } = useMemo(() => {
@@ -116,7 +117,7 @@ export default function Scatter3D() {
           html += `<div>${yCol}: <b style="color:#06b6d4">${Number(d[1]).toLocaleString()}</b></div>`
           html += `<div>${zCol}: <b style="color:#06b6d4">${Number(d[2]).toLocaleString()}</b></div>`
           if (row) {
-            html += `<div style="color:#94a3b8;margin-top:6px;border-top:1px solid rgba(59,130,246,0.2);padding-top:6px">点击查看全部字段</div>`
+            html += `<div style="color:#94a3b8;margin-top:6px;border-top:1px solid rgba(59,130,246,0.2);padding-top:6px">${isOutlier ? '点击查看异常故事卡片' : '点击查看全部字段'}</div>`
           }
           html += '</div>'
           return html
@@ -183,6 +184,12 @@ export default function Scatter3D() {
         const row = result.sampled_data?.[idx]
         if (row) {
           setSelectedPoint(row)
+        }
+        if (params.seriesName === '异常点' && result.outlier_stories) {
+          const story = result.outlier_stories.find((s) => s.row_index === idx)
+          if (story) {
+            setSelectedOutlierStory(story)
+          }
         }
       }
     })

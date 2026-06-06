@@ -78,6 +78,18 @@ export interface SummaryResult {
   insights: Insight[]
 }
 
+export interface OutlierStoryCard {
+  row_index: number
+  column: string
+  story: string
+  actual_value: number
+  expected_min: number
+  expected_max: number
+  deviation_percent: number
+  direction: '偏高' | '偏低' | string
+  context_fields: Record<string, any>
+}
+
 export interface AnalysisResult {
   task_id?: string
   dataset: DatasetInfo
@@ -87,6 +99,7 @@ export interface AnalysisResult {
   timeseries?: TimeSeriesResult
   summary: SummaryResult
   sampled_data?: Record<string, any>[]
+  outlier_stories: OutlierStoryCard[]
 }
 
 export type ChartType = 'correlation' | 'scatter' | 'histogram' | 'timeseries' | 'pie'
