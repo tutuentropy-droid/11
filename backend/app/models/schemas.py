@@ -86,3 +86,93 @@ class AnalysisResult(BaseModel):
     summary: SummaryResult
     sampled_data: Optional[List[Dict[str, Any]]] = None
     outlier_stories: List[OutlierStoryCard] = Field(default_factory=list)
+
+
+class NumericDiff(BaseModel):
+    column: str
+    mean_a: Optional[float] = None
+    mean_b: Optional[float] = None
+    mean_change_pct: Optional[float] = None
+    median_a: Optional[float] = None
+    median_b: Optional[float] = None
+    median_change_pct: Optional[float] = None
+    std_a: Optional[float] = None
+    std_b: Optional[float] = None
+
+
+class CategoricalDiffItem(BaseModel):
+    category: str
+    count_a: int
+    count_b: int
+    count_change: int
+    pct_a: float
+    pct_b: float
+    pct_change: float
+
+
+class CategoricalDiff(BaseModel):
+    column: str
+    items: List[CategoricalDiffItem]
+
+
+class TimeseriesDiffPoint(BaseModel):
+    time: str
+    value_a: Optional[float] = None
+    value_b: Optional[float] = None
+    diff: Optional[float] = None
+    diff_pct: Optional[float] = None
+
+
+class TimeseriesDiff(BaseModel):
+    time_column: str
+    value_column: str
+    aligned_points: List[TimeseriesDiffPoint]
+    only_in_a: List[Dict[str, Any]] = Field(default_factory=list)
+    only_in_b: List[Dict[str, Any]] = Field(default_factory=list)
+    total_a: Optional[float] = None
+    total_b: Optional[float] = None
+    total_change_pct: Optional[float] = None
+
+
+class CorrelationDiffPair(BaseModel):
+    col1: str
+    col2: str
+    corr_a: Optional[float] = None
+    corr_b: Optional[float] = None
+    corr_diff: Optional[float] = None
+
+
+class CorrelationDiff(BaseModel):
+    common_pairs: List[CorrelationDiffPair] = Field(default_factory=list)
+
+
+class CompareInsight(BaseModel):
+    severity: str
+    text: str
+    category: str
+    details: Optional[Dict[str, Any]] = None
+
+
+class CompareSummary(BaseModel):
+    headline: str
+    insights: List[CompareInsight]
+    key_metrics: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class CompareResult(BaseModel):
+    compare_id: Optional[str] = None
+    dataset_a: AnalysisResult
+    dataset_b: AnalysisResult
+    label_a: str
+    label_b: str
+    common_columns: List[str]
+    common_numeric_columns: List[str]
+    common_categorical_columns: List[str]
+    common_datetime_columns: List[str]
+    numeric_diffs: List[NumericDiff] = Field(default_factory=list)
+    categorical_diffs: List[CategoricalDiff] = Field(default_factory=list)
+    timeseries_diff: Optional[TimeseriesDiff] = None
+    correlation_diff: Optional[CorrelationDiff] = None
+    summary: CompareSummary
+    align_strategy: str
+    align_field: Optional[str] = None
