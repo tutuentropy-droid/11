@@ -10,6 +10,13 @@ const ACCEPTED = {
   'application/vnd.ms-excel': ['.xls'],
 }
 
+const INDUSTRY_TEMPLATES = [
+  { icon: '🛒', name: '电商行业', desc: 'GMV、复购率、客单价、退款率', color: 'text-cockpit-primary', bg: 'bg-cockpit-primary/10', border: 'border-cockpit-primary/30' },
+  { icon: '🏬', name: '零售行业', desc: '销售额、毛利率、坪效、库存周转', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30' },
+  { icon: '☁️', name: 'SaaS行业', desc: 'ARR、MRR、Churn、续费率、NDR', color: 'text-cockpit-purple', bg: 'bg-cockpit-purple/10', border: 'border-cockpit-purple/30' },
+  { icon: '💹', name: '财务会计', desc: '营收、成本、毛利、净利、现金流', color: 'text-yellow-300', bg: 'bg-yellow-400/10', border: 'border-yellow-400/30' },
+]
+
 function LoadingOverlay({ progress, mode }: { progress: number; mode: 'single' | 'compare' }) {
   const stages = [
     { at: 10, label: '解析文件结构...' },
@@ -363,6 +370,31 @@ export default function UploadPage() {
             ⚠️ {error}
           </div>
         )}
+
+        <div className="mt-10">
+          <div className="text-center mb-4">
+            <div className="text-sm font-mono text-cockpit-muted uppercase tracking-wider">
+              ⟡ 预置行业模板 · AI 自动匹配
+            </div>
+            <div className="text-cockpit-muted text-xs mt-1">
+              上传文件后系统将自动识别数据所属行业，生成专属指标看板
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {INDUSTRY_TEMPLATES.map((tpl) => (
+              <div
+                key={tpl.name}
+                className={`glass-panel relative p-4 border ${tpl.border}`}
+              >
+                <div className={`text-3xl mb-2 ${tpl.color}`}>{tpl.icon}</div>
+                <div className={`text-sm font-semibold ${tpl.color}`}>{tpl.name}</div>
+                <div className="text-xs text-cockpit-muted mt-1 leading-relaxed">
+                  {tpl.desc}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         <div className="mt-10 text-center text-cockpit-muted text-xs">
           所有数据仅在本地和服务器内存中处理，不会持久化存储

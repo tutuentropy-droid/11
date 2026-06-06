@@ -14,6 +14,7 @@ import Histogram3D from '../components/charts3d/Histogram3D'
 import Timeseries3D from '../components/charts3d/Timeseries3D'
 import Pie3D from '../components/charts3d/Pie3D'
 import InsightList from '../components/dashboard/InsightList'
+import IndustryMetricsPanel from '../components/dashboard/IndustryMetricsPanel'
 
 export default function Dashboard() {
   const result = useAnalysisStore((s) => s.result)
@@ -34,6 +35,7 @@ export default function Dashboard() {
   const hasOutliers = result.columns.some((c) => c.outliers.length > 0)
   const hasTimeseries = !!result.timeseries
   const hasCategorical = result.categorical_freq.length > 0
+  const hasIndustry = !!result.industry && result.industry.template_id !== 'general'
 
   const availableCharts = useMemo(() => {
     const list: Array<{ id: string; label: string; icon: string }> = []
@@ -88,7 +90,14 @@ export default function Dashboard() {
         onBack={handleBack}
         onExport={handleExport}
         exporting={exporting}
+        industry={result.industry}
       />
+
+      {hasIndustry && (
+        <div className="mt-4">
+          <IndustryMetricsPanel />
+        </div>
+      )}
 
       <div className="mt-4 mb-4">
         <SummaryCards />

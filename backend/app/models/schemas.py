@@ -76,6 +76,40 @@ class OutlierStoryCard(BaseModel):
     context_fields: Dict[str, Any] = Field(default_factory=dict)
 
 
+class KPIDefinition(BaseModel):
+    id: str
+    name: str
+    description: str
+    unit: str = ""
+    icon: str = "📊"
+    color: str = "blue"
+    trend_supported: bool = False
+
+
+class MatchScoreItem(BaseModel):
+    template_id: str
+    score: float
+
+
+class KPITrendPoint(BaseModel):
+    period: str
+    kpis: Dict[str, Any]
+
+
+class IndustryAnalysis(BaseModel):
+    template_id: str
+    template_name: str
+    template_icon: str
+    template_color: str
+    template_description: str
+    match_score: float
+    match_scores: List[MatchScoreItem] = Field(default_factory=list)
+    kpi_definitions: List[KPIDefinition] = Field(default_factory=list)
+    kpi_values: Dict[str, Any] = Field(default_factory=dict)
+    kpi_trends: List[KPITrendPoint] = Field(default_factory=list)
+    matched_columns: Dict[str, str] = Field(default_factory=dict)
+
+
 class AnalysisResult(BaseModel):
     task_id: Optional[str] = None
     dataset: DatasetInfo
@@ -86,6 +120,7 @@ class AnalysisResult(BaseModel):
     summary: SummaryResult
     sampled_data: Optional[List[Dict[str, Any]]] = None
     outlier_stories: List[OutlierStoryCard] = Field(default_factory=list)
+    industry: Optional[IndustryAnalysis] = None
 
 
 class NumericDiff(BaseModel):

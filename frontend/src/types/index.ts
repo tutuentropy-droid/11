@@ -90,6 +90,40 @@ export interface OutlierStoryCard {
   context_fields: Record<string, any>
 }
 
+export interface KPIDefinition {
+  id: string
+  name: string
+  description: string
+  unit: string
+  icon: string
+  color: string
+  trend_supported: boolean
+}
+
+export interface MatchScoreItem {
+  template_id: string
+  score: number
+}
+
+export interface KPITrendPoint {
+  period: string
+  kpis: Record<string, any>
+}
+
+export interface IndustryAnalysis {
+  template_id: string
+  template_name: string
+  template_icon: string
+  template_color: string
+  template_description: string
+  match_score: number
+  match_scores: MatchScoreItem[]
+  kpi_definitions: KPIDefinition[]
+  kpi_values: Record<string, any>
+  kpi_trends: KPITrendPoint[]
+  matched_columns: Record<string, string>
+}
+
 export interface AnalysisResult {
   task_id?: string
   dataset: DatasetInfo
@@ -100,6 +134,7 @@ export interface AnalysisResult {
   summary: SummaryResult
   sampled_data?: Record<string, any>[]
   outlier_stories: OutlierStoryCard[]
+  industry?: IndustryAnalysis
 }
 
 export type ChartType = 'correlation' | 'scatter' | 'histogram' | 'timeseries' | 'pie'

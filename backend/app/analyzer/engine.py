@@ -9,6 +9,7 @@ from ..models.schemas import (
     ColumnInfo,
     CategoricalFrequency,
     SummaryResult,
+    IndustryAnalysis,
 )
 from .column_types import classify_all_columns
 from .stats import compute_numeric_stats, compute_missing_rate, get_sample_values
@@ -17,6 +18,7 @@ from .correlation import compute_correlation
 from .categorical import compute_categorical_freq
 from .timeseries import analyze_timeseries
 from .summarizer import generate_summary
+from .industry import detect_industry_and_calculate
 
 
 def _sample_for_visualization(df: pd.DataFrame, max_rows: int = 5000) -> pd.DataFrame:
@@ -101,6 +103,9 @@ class AnalysisEngine:
 
         outlier_stories = generate_outlier_stories(df, col_types)
 
+        industry_data = detect_industry_and_calculate(df)
+        industry_analysis = IndustryAnalysis(**industry_data) if industry_data else None
+
         partial_result = AnalysisResult(
             dataset=dataset_info,
             columns=columns_info,
@@ -110,6 +115,7 @@ class AnalysisEngine:
             summary=SummaryResult(headline="", insights=[]),
             sampled_data=sampled_data,
             outlier_stories=outlier_stories,
+            industry=industry_analysis,
         )
 
         summary = generate_summary(partial_result)
