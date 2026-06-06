@@ -19,6 +19,7 @@ from .categorical import compute_categorical_freq
 from .timeseries import analyze_timeseries
 from .summarizer import generate_summary
 from .industry import detect_industry_and_calculate
+from .quality_scanner import scan_data_quality
 
 
 def _sample_for_visualization(df: pd.DataFrame, max_rows: int = 5000) -> pd.DataFrame:
@@ -120,5 +121,8 @@ class AnalysisEngine:
 
         summary = generate_summary(partial_result)
         partial_result.summary = summary
+
+        quality_report = scan_data_quality(df, col_types)
+        partial_result.quality_report = quality_report
 
         return partial_result

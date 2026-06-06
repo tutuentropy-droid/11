@@ -15,6 +15,9 @@ import Timeseries3D from '../components/charts3d/Timeseries3D'
 import Pie3D from '../components/charts3d/Pie3D'
 import InsightList from '../components/dashboard/InsightList'
 import IndustryMetricsPanel from '../components/dashboard/IndustryMetricsPanel'
+import { IssueList, QualityAnnotatedTable } from '../components/dashboard/DataQualityPanel'
+import QualityComparePanel from '../components/dashboard/QualityComparePanel'
+import QualityScoreBadge, { QualityBreakdownBars } from '../components/dashboard/QualityScoreBadge'
 
 export default function Dashboard() {
   const result = useAnalysisStore((s) => s.result)
@@ -22,8 +25,11 @@ export default function Dashboard() {
   const reset = useAnalysisStore((s) => s.reset)
   const selectedOutlierStory = useAnalysisStore((s) => s.selectedOutlierStory)
   const setSelectedOutlierStory = useAnalysisStore((s) => s.setSelectedOutlierStory)
+  const lastCleanResult = useAnalysisStore((s) => s.lastCleanResult)
+  const qualityBeforeSnapshot = useAnalysisStore((s) => s.qualityBeforeSnapshot)
   const navigate = useNavigate()
   const [exporting, setExporting] = useState(false)
+  const [showQualityPanel, setShowQualityPanel] = useState(false)
 
   if (!result) {
     navigate('/')
@@ -36,6 +42,10 @@ export default function Dashboard() {
   const hasTimeseries = !!result.timeseries
   const hasCategorical = result.categorical_freq.length > 0
   const hasIndustry = !!result.industry && result.industry.template_id !== 'general'
+  const hasQualityReport = !!result.quality_report
+  const qualityReport = result.quality_report
+  const qualityAfter = lastCleanResult?.quality_after || result.quality_report?.quality
+  const qualityBefore = lastCleanResult?.quality_before || qualityBeforeSnapshot
 
   const availableCharts = useMemo(() => {
     const list: Array<{ id: string; label: string; icon: string }> = []
@@ -100,8 +110,42 @@ export default function Dashboard() {
       )}
 
       <div className="mt-4 mb-4">
-        <SummaryCards />
+        <SummaryCards onQualityClick={hasQualityReport ? () => setShowQualityPanel(true) : undefined} />
       </div>
+
+      {hasQualityReport && result.quality_report && (
+        <div className="mb-4 grid grid-cols-12 gap-4">
+          <div className="col-span-12 lg:col-span-3">
+            <div className="glass-panel relative p-4">
+              <span className="hud-corner tl" />
+              <span className="hud-corner br" />
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs font-mono text-cockpit-cyan uppercase tracking-wider">
+                  ◎ 数据质量
+                </div>
+                <button
+                  onClick={() => setShowQualityPanel(true)}
+                  className="text-xs px-2 py-1 rounded border border-cockpit-cyan/30 text-cockpit-cyan hover:bg-cockpit-cyan/10 transition-colors"
+                >
+                  展开 →
+                </button>
+              </div>
+              <div className="flex items-start gap-4">
+                <QualityScoreBadge quality={result.quality_report.quality} size="sm" />
+                <div className="flex-1">
+                  <QualityBreakdownBars quality={result.quality_report.quality} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {qualityBefore && qualityAfter && lastCleanResult && (
+            <div className="col-span-12 lg:col-span-9">
+              <QualityComparePanel before={qualityBefore} after={qualityAfter} />
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-12 gap-4">
         <div className="col-span-12 lg:col-span-2">
@@ -136,6 +180,106 @@ export default function Dashboard() {
         title="异常点故事卡片"
       >
         {selectedOutlierStory && <OutlierStoryCard data={selectedOutlierStory} />}
+      </Modal>
+
+      <Modal
+        open={showQualityPanel}
+        onClose={() => setShowQualityPanel(false)}
+        title="🔬 数据质量扫描中心"
+        wide
+      >
+        {hasQualityReport && qualityReport && result && (
+          <div className="space-y-5">
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-12 md:col-span-4">
+                <div className="glass-panel p-4 h-full">
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <QualityScoreBadge quality={qualityReport.quality} label="综合质量评分" />
+                    <div className="w-full mt-5">
+                      <QualityBreakdownBars quality={qualityReport.quality} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="col-span-12 md:col-span-8 space-y-3">
+                {qualityBefore && qualityAfter && lastCleanResult ? (
+                  <QualityComparePanel before={qualityBefore} after={qualityAfter} />
+                ) : (
+                  <>
+                    <div className="glass-panel p-4">
+                      <div className="text-xs font-mono text-cockpit-cyan uppercase tracking-wider mb-3">
+                        📊 扫描概览
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold font-mono text-cockpit-cyan">
+                            {qualityReport.total_rows}
+                          </div>
+                          <div className="text-xs text-cockpit-muted">扫描行数</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold font-mono text-cockpit-warning">
+                            {qualityReport.total_issues}
+                          </div>
+                          <div className="text-xs text-cockpit-muted">问题类别</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold font-mono text-cockpit-danger">
+                            {qualityReport.total_affected_rows}
+                          </div>
+                          <div className="text-xs text-cockpit-muted">影响行数</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="glass-panel p-4 border border-cockpit-cyan/20">
+                      <div className="flex items-start gap-2">
+                        <span className="text-xl">💡</span>
+                        <div className="flex-1 text-sm text-cockpit-text">
+                          <div className="font-medium mb-1">数据清洗建议</div>
+                          <div className="text-cockpit-muted text-xs leading-relaxed">
+                            下方表格中带三维发光边框的单元格存在数据质量问题。点击每条问题旁的
+                            <span className="px-1 text-cockpit-cyan">查看详情</span>
+                            可了解具体问题，点击
+                            <span className="px-1 text-cockpit-primary">一键修正</span>
+                            可自动处理并实时刷新分析结果。
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="glass-panel relative p-4">
+              <span className="hud-corner tl" />
+              <span className="hud-corner tr" />
+              <span className="hud-corner bl" />
+              <span className="hud-corner br" />
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-lg">📋</span>
+                <span className="font-mono text-sm text-cockpit-cyan uppercase tracking-wider">
+                  三维标注数据预览
+                </span>
+              </div>
+              <QualityAnnotatedTable result={result} />
+            </div>
+
+            <div className="glass-panel relative p-4">
+              <span className="hud-corner tl" />
+              <span className="hud-corner tr" />
+              <span className="hud-corner bl" />
+              <span className="hud-corner br" />
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-lg">⚠️</span>
+                <span className="font-mono text-sm text-cockpit-cyan uppercase tracking-wider">
+                  问题清单与快速修复
+                </span>
+              </div>
+              <IssueList report={qualityReport} result={result} />
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

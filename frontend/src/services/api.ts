@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { AnalysisResult, CompareResult } from '../types'
+import type { AnalysisResult, CompareResult, CleanResult } from '../types'
 
 const api = axios.create({
   baseURL: '/api',
@@ -47,6 +47,23 @@ export async function uploadAndCompare(
     },
   })
   if (onProgress) onProgress(100)
+  return res.data
+}
+
+export async function cleanIssue(taskId: string, issueIndex: number): Promise<CleanResult> {
+  const res = await api.post<CleanResult>('/clean', {
+    task_id: taskId,
+    issue_index: issueIndex,
+    fix_all: false,
+  })
+  return res.data
+}
+
+export async function cleanAllIssues(taskId: string): Promise<CleanResult> {
+  const res = await api.post<CleanResult>('/clean', {
+    task_id: taskId,
+    fix_all: true,
+  })
   return res.data
 }
 

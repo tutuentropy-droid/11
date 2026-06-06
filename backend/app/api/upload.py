@@ -7,6 +7,7 @@ import tempfile
 from ..utils.file_io import read_file_to_df
 from ..analyzer.engine import AnalysisEngine
 from ..models.schemas import AnalysisResult
+from ..analyzer.cleaner import cache_dataframe
 
 router = APIRouter(prefix="/api", tags=["analysis"])
 
@@ -29,6 +30,7 @@ async def upload_and_analyze(file: UploadFile = File(...)):
         task_id = str(uuid.uuid4())[:8]
         result.task_id = task_id
         _cache[task_id] = result
+        cache_dataframe(task_id, df)
 
         cache_dir = os.path.join(tempfile.gettempdir(), "datainsight_cache")
         os.makedirs(cache_dir, exist_ok=True)

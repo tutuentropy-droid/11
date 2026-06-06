@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .api.upload import router as upload_router
 from .api.export import router as export_router
 from .api.compare import router as compare_router
+from .api.cleaning import router as cleaning_router
 
 app = FastAPI(
     title="数据洞察指挥舱 API",
@@ -22,6 +23,7 @@ app.add_middleware(
 app.include_router(upload_router)
 app.include_router(export_router)
 app.include_router(compare_router)
+app.include_router(cleaning_router)
 
 
 @app.get("/api/health")

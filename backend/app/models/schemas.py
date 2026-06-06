@@ -110,6 +110,45 @@ class IndustryAnalysis(BaseModel):
     matched_columns: Dict[str, str] = Field(default_factory=dict)
 
 
+class QualityFixSuggestion(BaseModel):
+    fix_type: str
+    column: Optional[str] = None
+    description: str
+    impact: str
+    fill_strategy: Optional[str] = None
+    fill_value: Optional[Union[int, float, str]] = None
+
+
+class DataQualityIssue(BaseModel):
+    issue_type: str
+    severity: str
+    column: str
+    row_indices: List[int]
+    count: int
+    message: str
+    details: Dict[str, Any] = Field(default_factory=dict)
+    suggestion: Optional[QualityFixSuggestion] = None
+    fixed: bool = False
+
+
+class QualityCategory(BaseModel):
+    score: float
+    score_percentage: float
+    grade: str
+    breakdown: Dict[str, float] = Field(default_factory=dict)
+    issue_counts: Dict[str, int] = Field(default_factory=dict)
+
+
+class DataQualityReport(BaseModel):
+    quality: QualityCategory
+    issues: List[DataQualityIssue]
+    total_rows: int
+    total_columns: int
+    total_cells: int
+    total_issues: int
+    total_affected_rows: int
+
+
 class AnalysisResult(BaseModel):
     task_id: Optional[str] = None
     dataset: DatasetInfo
@@ -121,6 +160,23 @@ class AnalysisResult(BaseModel):
     sampled_data: Optional[List[Dict[str, Any]]] = None
     outlier_stories: List[OutlierStoryCard] = Field(default_factory=list)
     industry: Optional[IndustryAnalysis] = None
+    quality_report: Optional[DataQualityReport] = None
+
+
+class CleanRequest(BaseModel):
+    task_id: str
+    issue_index: Optional[int] = None
+    fix_all: bool = False
+
+
+class CleanResult(BaseModel):
+    task_id: str
+    success: bool
+    message: str
+    fixed_issues: List[int] = Field(default_factory=list)
+    quality_before: Optional[QualityCategory] = None
+    quality_after: Optional[QualityCategory] = None
+    updated_analysis: Optional[AnalysisResult] = None
 
 
 class NumericDiff(BaseModel):

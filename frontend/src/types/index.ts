@@ -135,6 +135,56 @@ export interface AnalysisResult {
   sampled_data?: Record<string, any>[]
   outlier_stories: OutlierStoryCard[]
   industry?: IndustryAnalysis
+  quality_report?: DataQualityReport
+}
+
+export interface QualityFixSuggestion {
+  fix_type: string
+  column?: string
+  description: string
+  impact: string
+  fill_strategy?: string
+  fill_value?: number | string
+}
+
+export interface DataQualityIssue {
+  issue_type: 'duplicate' | 'missing' | 'format_date' | 'format_numeric' | 'case_inconsistency' | 'extreme_value' | string
+  severity: 'high' | 'medium' | 'low'
+  column: string
+  row_indices: number[]
+  count: number
+  message: string
+  details: Record<string, any>
+  suggestion?: QualityFixSuggestion
+  fixed: boolean
+}
+
+export interface QualityCategory {
+  score: number
+  score_percentage: number
+  grade: 'A' | 'B' | 'C' | 'D' | 'F' | string
+  breakdown: Record<string, number>
+  issue_counts: Record<string, number>
+}
+
+export interface DataQualityReport {
+  quality: QualityCategory
+  issues: DataQualityIssue[]
+  total_rows: number
+  total_columns: number
+  total_cells: number
+  total_issues: number
+  total_affected_rows: number
+}
+
+export interface CleanResult {
+  task_id: string
+  success: boolean
+  message: string
+  fixed_issues: number[]
+  quality_before?: QualityCategory
+  quality_after?: QualityCategory
+  updated_analysis?: AnalysisResult
 }
 
 export type ChartType = 'correlation' | 'scatter' | 'histogram' | 'timeseries' | 'pie'

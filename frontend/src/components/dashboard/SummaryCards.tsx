@@ -11,15 +11,20 @@ function StatCard({
   sub,
   color,
   icon,
+  onClick,
 }: {
   label: string
   value: string
   sub?: string
   color: string
   icon: string
+  onClick?: () => void
 }) {
   return (
-    <div className="glass-panel relative px-5 py-4 flex items-center gap-4 overflow-hidden">
+    <div
+      className={`glass-panel relative px-5 py-4 flex items-center gap-4 overflow-hidden ${onClick ? 'cursor-pointer hover:scale-[1.02] transition-transform' : ''}`}
+      onClick={onClick}
+    >
       <span className="hud-corner tl" />
       <span className="hud-corner br" />
       <div
@@ -36,12 +41,41 @@ function StatCard({
   )
 }
 
-export default function SummaryCards() {
+export default function SummaryCards({ onQualityClick }: { onQualityClick?: () => void }) {
   const result = useAnalysisStore((s) => s.result)
   if (!result) return null
   const ds = result.dataset
   const outlierCount = result.columns.reduce((a, c) => a + c.outliers.length, 0)
   const highCorr = result.correlations?.top_pairs.filter((p) => Math.abs(p[2]) >= 0.7).length || 0
+
+  const quality = result.quality_report?.quality
+  const qualityIssues = result.quality_report?.issues || []
+  const unfixedQualityCount = qualityIssues.filter((i) => !i.fixed).length
+
+  const qualityLabel = quality
+    ? `${quality.score_percentage.toFixed(1)}% · 等级 ${quality.grade}`
+    : `${(100 - ds.total_missing_rate * 100).toFixed(1)}%`
+  const qualitySub = quality
+    ? unfixedQualityCount > 0
+      ? `${unfixedQualityCount} 类待修复问题`
+      : '所有问题已修正'
+    : `缺失率 ${(ds.total_missing_rate * 100).toFixed(2)}%`
+  const qualityColor = quality
+    ? quality.grade === 'A'
+      ? 'bg-green-500/15 text-green-400'
+      : quality.grade === 'B'
+        ? 'bg-cyan-500/15 text-cyan-400'
+        : quality.grade === 'C'
+          ? 'bg-yellow-500/15 text-yellow-400'
+          : 'bg-red-500/15 text-red-400'
+    : ds.total_missing_rate < 0.05
+      ? 'bg-green-500/15 text-green-400'
+      : ds.total_missing_rate < 0.2
+        ? 'bg-yellow-500/15 text-yellow-400'
+        : 'bg-red-500/15 text-red-400'
+  const qualityIcon = quality
+    ? quality.grade === 'A' ? '🏆' : quality.grade === 'B' ? '🥈' : quality.grade === 'C' ? '🥉' : '🚨'
+    : ds.total_missing_rate < 0.05 ? '✅' : ds.total_missing_rate < 0.2 ? '⚠️' : '🚨'
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -54,16 +88,11 @@ export default function SummaryCards() {
       />
       <StatCard
         label="数据质量"
-        value={`${(100 - ds.total_missing_rate * 100).toFixed(1)}%`}
-        sub={`缺失率 ${(ds.total_missing_rate * 100).toFixed(2)}%`}
-        color={
-          ds.total_missing_rate < 0.05
-            ? 'bg-green-500/15 text-green-400'
-            : ds.total_missing_rate < 0.2
-              ? 'bg-yellow-500/15 text-yellow-400'
-              : 'bg-red-500/15 text-red-400'
-        }
-        icon={ds.total_missing_rate < 0.05 ? '✅' : ds.total_missing_rate < 0.2 ? '⚠️' : '🚨'}
+        value={qualityLabel}
+        sub={qualitySub}
+        color={qualityColor}
+        icon={qualityIcon}
+        onClick={onQualityClick}
       />
       <StatCard
         label="异常检测"

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AnalysisResult, ChartType, Insight, OutlierStoryCard, CompareResult, CompareChartType } from '../types'
+import type { AnalysisResult, ChartType, Insight, OutlierStoryCard, CompareResult, CompareChartType, CleanResult, QualityCategory } from '../types'
 
 interface AnalysisState {
   result: AnalysisResult | null
@@ -14,6 +14,10 @@ interface AnalysisState {
   progress: number
   mode: 'single' | 'compare'
   compareViewMode: 'overlay' | 'sidebyside'
+  cleaning: boolean
+  cleaningError: string | null
+  lastCleanResult: CleanResult | null
+  qualityBeforeSnapshot: QualityCategory | null
 
   setResult: (r: AnalysisResult | null) => void
   setCompareResult: (r: CompareResult | null) => void
@@ -27,6 +31,11 @@ interface AnalysisState {
   setSelectedOutlierStory: (s: OutlierStoryCard | null) => void
   setMode: (m: 'single' | 'compare') => void
   setCompareViewMode: (m: 'overlay' | 'sidebyside') => void
+  setCleaning: (v: boolean) => void
+  setCleaningError: (e: string | null) => void
+  setLastCleanResult: (r: CleanResult | null) => void
+  setQualityBeforeSnapshot: (q: QualityCategory | null) => void
+  applyCleanResult: (r: CleanResult) => void
   reset: () => void
 }
 
@@ -43,6 +52,10 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   progress: 0,
   mode: 'single',
   compareViewMode: 'overlay',
+  cleaning: false,
+  cleaningError: null,
+  lastCleanResult: null,
+  qualityBeforeSnapshot: null,
 
   setResult: (r) => set({ result: r }),
   setCompareResult: (r) => set({ compareResult: r }),
@@ -56,6 +69,17 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   setSelectedOutlierStory: (s) => set({ selectedOutlierStory: s }),
   setMode: (m) => set({ mode: m }),
   setCompareViewMode: (m) => set({ compareViewMode: m }),
+  setCleaning: (v) => set({ cleaning: v }),
+  setCleaningError: (e) => set({ cleaningError: e }),
+  setLastCleanResult: (r) => set({ lastCleanResult: r }),
+  setQualityBeforeSnapshot: (q) => set({ qualityBeforeSnapshot: q }),
+  applyCleanResult: (r) => {
+    if (r.updated_analysis) {
+      set({ result: r.updated_analysis, lastCleanResult: r })
+    } else {
+      set({ lastCleanResult: r })
+    }
+  },
   reset: () =>
     set({
       result: null,
@@ -70,5 +94,9 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
       progress: 0,
       mode: 'single',
       compareViewMode: 'overlay',
+      cleaning: false,
+      cleaningError: null,
+      lastCleanResult: null,
+      qualityBeforeSnapshot: null,
     }),
 }))
