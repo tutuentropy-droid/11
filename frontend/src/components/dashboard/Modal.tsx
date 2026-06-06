@@ -6,9 +6,10 @@ interface ModalProps {
   title?: string
   children: ReactNode
   wide?: boolean
+  small?: boolean
 }
 
-export default function Modal({ open, onClose, title, children, wide }: ModalProps) {
+export default function Modal({ open, onClose, title, children, wide, small }: ModalProps) {
   useEffect(() => {
     if (!open) return
     const handleKey = (e: KeyboardEvent) => {
@@ -26,7 +27,7 @@ export default function Modal({ open, onClose, title, children, wide }: ModalPro
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className={`relative glass-panel glow-border w-full ${wide ? 'max-w-6xl' : 'max-w-lg'} max-h-[90vh] rounded-2xl p-6 animate-in fade-in zoom-in-95 duration-200 overflow-hidden flex flex-col`}>
+      <div className={`relative glass-panel glow-border w-full ${wide ? 'max-w-6xl' : small ? 'max-w-md' : 'max-w-lg'} max-h-[90vh] rounded-2xl p-6 animate-in fade-in zoom-in-95 duration-200 overflow-hidden flex flex-col`}>
         <span className="hud-corner tl" />
         <span className="hud-corner tr" />
         <span className="hud-corner bl" />

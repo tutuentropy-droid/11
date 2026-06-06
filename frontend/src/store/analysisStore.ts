@@ -1,5 +1,17 @@
 import { create } from 'zustand'
-import type { AnalysisResult, ChartType, Insight, OutlierStoryCard, CompareResult, CompareChartType, CleanResult, QualityCategory } from '../types'
+import type {
+  AnalysisResult,
+  ChartType,
+  Insight,
+  OutlierStoryCard,
+  CompareResult,
+  CompareChartType,
+  CleanResult,
+  QualityCategory,
+  NLChartResponse,
+  NLChartHistoryItem,
+  LLMConfigStatus,
+} from '../types'
 
 interface AnalysisState {
   result: AnalysisResult | null
@@ -18,6 +30,12 @@ interface AnalysisState {
   cleaningError: string | null
   lastCleanResult: CleanResult | null
   qualityBeforeSnapshot: QualityCategory | null
+  nlChartLoading: boolean
+  nlChartError: string | null
+  nlChartResponse: NLChartResponse | null
+  nlChartHistory: NLChartHistoryItem[]
+  showNLCustomChart: boolean
+  llmConfig: LLMConfigStatus
 
   setResult: (r: AnalysisResult | null) => void
   setCompareResult: (r: CompareResult | null) => void
@@ -36,6 +54,12 @@ interface AnalysisState {
   setLastCleanResult: (r: CleanResult | null) => void
   setQualityBeforeSnapshot: (q: QualityCategory | null) => void
   applyCleanResult: (r: CleanResult) => void
+  setNLChartLoading: (v: boolean) => void
+  setNLChartError: (e: string | null) => void
+  setNLChartResponse: (r: NLChartResponse | null) => void
+  addNLChartHistory: (item: NLChartHistoryItem) => void
+  setShowNLCustomChart: (v: boolean) => void
+  setLLMConfig: (c: LLMConfigStatus) => void
   reset: () => void
 }
 
@@ -56,6 +80,12 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   cleaningError: null,
   lastCleanResult: null,
   qualityBeforeSnapshot: null,
+  nlChartLoading: false,
+  nlChartError: null,
+  nlChartResponse: null,
+  nlChartHistory: [],
+  showNLCustomChart: false,
+  llmConfig: { configured: false, provider: '', model: '' },
 
   setResult: (r) => set({ result: r }),
   setCompareResult: (r) => set({ compareResult: r }),
@@ -80,6 +110,15 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
       set({ lastCleanResult: r })
     }
   },
+  setNLChartLoading: (v) => set({ nlChartLoading: v }),
+  setNLChartError: (e) => set({ nlChartError: e }),
+  setNLChartResponse: (r) => set({ nlChartResponse: r }),
+  addNLChartHistory: (item) =>
+    set((state) => ({
+      nlChartHistory: [item, ...state.nlChartHistory].slice(0, 20),
+    })),
+  setShowNLCustomChart: (v) => set({ showNLCustomChart: v }),
+  setLLMConfig: (c) => set({ llmConfig: c }),
   reset: () =>
     set({
       result: null,
@@ -98,5 +137,11 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
       cleaningError: null,
       lastCleanResult: null,
       qualityBeforeSnapshot: null,
+      nlChartLoading: false,
+      nlChartError: null,
+      nlChartResponse: null,
+      nlChartHistory: [],
+      showNLCustomChart: false,
+      llmConfig: { configured: false, provider: '', model: '' },
     }),
 }))

@@ -13,20 +13,24 @@ import Scatter3D from '../components/charts3d/Scatter3D'
 import Histogram3D from '../components/charts3d/Histogram3D'
 import Timeseries3D from '../components/charts3d/Timeseries3D'
 import Pie3D from '../components/charts3d/Pie3D'
+import CustomChart3D from '../components/charts3d/CustomChart3D'
 import InsightList from '../components/dashboard/InsightList'
 import IndustryMetricsPanel from '../components/dashboard/IndustryMetricsPanel'
 import { IssueList, QualityAnnotatedTable } from '../components/dashboard/DataQualityPanel'
 import QualityComparePanel from '../components/dashboard/QualityComparePanel'
 import QualityScoreBadge, { QualityBreakdownBars } from '../components/dashboard/QualityScoreBadge'
+import NLChartInput from '../components/dashboard/NLChartInput'
 
 export default function Dashboard() {
   const result = useAnalysisStore((s) => s.result)
   const activeChart = useAnalysisStore((s) => s.activeChart)
+  const showNLCustomChart = useAnalysisStore((s) => s.showNLCustomChart)
   const reset = useAnalysisStore((s) => s.reset)
   const selectedOutlierStory = useAnalysisStore((s) => s.selectedOutlierStory)
   const setSelectedOutlierStory = useAnalysisStore((s) => s.setSelectedOutlierStory)
   const lastCleanResult = useAnalysisStore((s) => s.lastCleanResult)
   const qualityBeforeSnapshot = useAnalysisStore((s) => s.qualityBeforeSnapshot)
+  const nlChartResponse = useAnalysisStore((s) => s.nlChartResponse)
   const navigate = useNavigate()
   const [exporting, setExporting] = useState(false)
   const [showQualityPanel, setShowQualityPanel] = useState(false)
@@ -58,6 +62,9 @@ export default function Dashboard() {
   }, [hasCorrelation, hasNumeric, hasOutliers, hasTimeseries, hasCategorical])
 
   const renderChart = () => {
+    if (showNLCustomChart) {
+      return <CustomChart3D />
+    }
     switch (activeChart) {
       case 'correlation':
         return hasCorrelation ? <Correlation3D /> : <EmptyChart text="无可分析的数值列" />
@@ -156,6 +163,9 @@ export default function Dashboard() {
         </div>
 
         <div className="col-span-12 lg:col-span-7">
+          <div className="mb-3">
+            <NLChartInput />
+          </div>
           <div className="glass-panel relative h-[680px] p-4">
             <span className="hud-corner tl" />
             <span className="hud-corner tr" />
@@ -163,7 +173,9 @@ export default function Dashboard() {
             <span className="hud-corner br" />
             <div className="absolute top-3 left-4 text-xs font-mono text-cockpit-muted z-10">
               <span className="text-cockpit-cyan">⟡</span> MAIN VIEWPORT ·{' '}
-              {availableCharts.find((c) => c.id === activeChart)?.label || 'IDLE'}
+              {showNLCustomChart
+                ? nlChartResponse?.chart_data?.title || '✨ 自然语言出图'
+                : availableCharts.find((c) => c.id === activeChart)?.label || 'IDLE'}
             </div>
             <div className="w-full h-full">{renderChart()}</div>
           </div>

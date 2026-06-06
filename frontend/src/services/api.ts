@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { AnalysisResult, CompareResult, CleanResult } from '../types'
+import type { AnalysisResult, CompareResult, CleanResult, NLChartResponse, LLMConfigStatus } from '../types'
 
 const api = axios.create({
   baseURL: '/api',
@@ -92,4 +92,32 @@ export function downloadBlob(blob: Blob, filename: string) {
   a.click()
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
+}
+
+export async function queryNLChart(taskId: string, query: string): Promise<NLChartResponse> {
+  const res = await api.post<NLChartResponse>('/nl-chart', {
+    task_id: taskId,
+    query,
+  })
+  return res.data
+}
+
+export async function configureLLM(
+  provider: string,
+  apiKey: string,
+  baseUrl?: string,
+  model?: string,
+): Promise<LLMConfigStatus> {
+  const res = await api.post<LLMConfigStatus>('/nl-chart/config', {
+    provider,
+    api_key: apiKey,
+    base_url: baseUrl,
+    model,
+  })
+  return res.data
+}
+
+export async function getLLMStatus(): Promise<LLMConfigStatus> {
+  const res = await api.get<LLMConfigStatus>('/nl-chart/config')
+  return res.data
 }

@@ -280,3 +280,66 @@ export interface CompareResult {
 }
 
 export type CompareChartType = 'compare_timeseries' | 'compare_correlation' | 'compare_histogram' | 'compare_numeric' | 'compare_categorical' | 'side_by_side'
+
+export interface IntentFilter {
+  column: string
+  operator: string
+  values: any[]
+}
+
+export interface ParsedIntent {
+  chart_type: string
+  value_columns: string[]
+  group_by: string[]
+  time_column?: string | null
+  filters: IntentFilter[]
+  aggregation: string
+  time_granularity?: string | null
+  title: string
+  parser_source: 'llm' | 'keyword'
+}
+
+export interface ChartDataPoint {
+  x: any
+  y?: any
+  z?: any
+  value?: number
+  category?: string
+  extra: Record<string, any>
+}
+
+export interface CustomChartData {
+  chart_type: string
+  title: string
+  x_label: string
+  y_label: string
+  z_label: string
+  categories: string[]
+  series: Array<Record<string, any>>
+  data_points: ChartDataPoint[]
+  raw_columns: string[]
+  message?: string
+}
+
+export interface NLChartResponse {
+  success: boolean
+  intent?: ParsedIntent
+  chart_data?: CustomChartData
+  message: string
+  error?: string
+}
+
+export interface LLMConfigStatus {
+  configured: boolean
+  provider: string
+  model: string
+}
+
+export interface NLChartHistoryItem {
+  id: string
+  query: string
+  timestamp: number
+  response: NLChartResponse
+}
+
+export type NLChartType = 'nl_custom' | ChartType

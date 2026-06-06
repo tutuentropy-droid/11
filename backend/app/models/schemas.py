@@ -267,3 +267,69 @@ class CompareResult(BaseModel):
     summary: CompareSummary
     align_strategy: str
     align_field: Optional[str] = None
+
+
+class IntentFilter(BaseModel):
+    column: str
+    operator: str = "in"
+    values: List[Any]
+
+
+class ParsedIntent(BaseModel):
+    chart_type: str
+    value_columns: List[str] = Field(default_factory=list)
+    group_by: List[str] = Field(default_factory=list)
+    time_column: Optional[str] = None
+    filters: List[IntentFilter] = Field(default_factory=list)
+    aggregation: str = "sum"
+    time_granularity: Optional[str] = None
+    title: str = ""
+    parser_source: str = "keyword"
+
+
+class ChartDataPoint(BaseModel):
+    x: Any
+    y: Any = None
+    z: Any = None
+    value: Optional[float] = None
+    category: Optional[str] = None
+    extra: Dict[str, Any] = Field(default_factory=dict)
+
+
+class CustomChartData(BaseModel):
+    chart_type: str
+    title: str
+    x_label: str = ""
+    y_label: str = ""
+    z_label: str = ""
+    categories: List[str] = Field(default_factory=list)
+    series: List[Dict[str, Any]] = Field(default_factory=list)
+    data_points: List[ChartDataPoint] = Field(default_factory=list)
+    raw_columns: List[str] = Field(default_factory=list)
+    message: Optional[str] = None
+
+
+class NLChartRequest(BaseModel):
+    task_id: str
+    query: str
+
+
+class NLChartResponse(BaseModel):
+    success: bool
+    intent: Optional[ParsedIntent] = None
+    chart_data: Optional[CustomChartData] = None
+    message: str = ""
+    error: Optional[str] = None
+
+
+class LLMConfigRequest(BaseModel):
+    provider: str = "openai"
+    api_key: str
+    base_url: Optional[str] = None
+    model: Optional[str] = None
+
+
+class LLMConfigStatus(BaseModel):
+    configured: bool
+    provider: str = ""
+    model: str = ""
