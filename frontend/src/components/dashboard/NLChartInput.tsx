@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAnalysisStore } from '../../store/analysisStore'
 import { queryNLChart, getLLMStatus, configureLLM } from '../../services/api'
+import { getLogger } from '../../utils/logger'
 import Modal from './Modal'
+
+const logger = getLogger('components.NLChartInput')
 
 const EXAMPLE_QUERIES = [
   '画一张华东区每月利润趋势图',
@@ -42,13 +45,44 @@ export default function NLChartInput() {
     const q = query.trim()
     if (!q || !result?.task_id || nlChartLoading) return
 
+    logger.info('用户提交自然语言查询', {
+      task_id: result.task_id,
+      query: q,
+      event: 'nl_query_submit',
+    })
+
     setNLChartLoading(true)
     setNLChartError(null)
     try {
       const response = await queryNLChart(result.task_id, q)
       setNLChartResponse(response)
       if (response.success && response.chart_data) {
+        logger.info('自然语言出图成功，展示图表', {
+          task_id: result.task_id,
+          query: q,
+          parser_source: response.intent?.parser_source,
+          chart_type: response.intent?.chart_type,
+          event: 'nl_chart_show',
+        })
         setShowNLCustomChart(true)
+      } else {
+        logger.warn('自然语言出图失败', {
+          task_id: result.task_id,
+          query: q,
+          success: response.success,
+          message: response.message,
+          error: response.error,
+          intent: response.intent
+            ? {
+                parser_source: response.intent.parser_source,
+                chart_type: response.intent.chart_type,
+                value_columns: response.intent.value_columns,
+                group_by: response.intent.group_by,
+                filters: response.intent.filters,
+              }
+            : null,
+          event: 'nl_chart_failed',
+        })
       }
       addNLChartHistory({
         id: Date.now().toString(),
@@ -58,6 +92,16 @@ export default function NLChartInput() {
       })
       setQuery('')
     } catch (err: any) {
+      logger.error(
+        '自然语言查询异常',
+        err,
+        {
+          task_id: result.task_id,
+          query: q,
+          error_message: err?.message,
+          event: 'nl_query_error',
+        },
+      )
       setNLChartError(err?.message || '请求失败')
     } finally {
       setNLChartLoading(false)
@@ -65,12 +109,22 @@ export default function NLChartInput() {
   }
 
   const handleHistoryClick = (q: string) => {
+    logger.info('用户点击历史查询', {
+      query: q,
+      event: 'nl_history_click',
+    })
     setQuery(q)
     inputRef.current?.focus()
   }
 
   const handleConfigSave = async () => {
     if (!configApiKey) return
+    logger.info('用户保存 LLM 配置', {
+      provider: configProvider,
+      model: configModel || undefined,
+      has_base_url: !!configBaseUrl,
+      event: 'llm_config_save',
+    })
     setConfigSaving(true)
     try {
       const status = await configureLLM(
@@ -83,6 +137,14 @@ export default function NLChartInput() {
       setShowConfig(false)
       setConfigApiKey('')
     } catch (err: any) {
+      logger.error(
+        'LLM 配置保存失败',
+        err,
+        {
+          error_message: err?.message,
+          event: 'llm_config_error',
+        },
+      )
       alert('配置失败: ' + (err?.message || '未知错误'))
     } finally {
       setConfigSaving(false)
@@ -110,6 +172,7 @@ export default function NLChartInput() {
           </span>
           <button
             onClick={() => {
+              logger.info('用户打开 LLM 配置面板', { event: 'llm_config_open' })
               setConfigProvider(llmConfig.provider || 'openai')
               setConfigModel(llmConfig.model || '')
               setShowConfig(true)

@@ -1,0 +1,6 @@
+{"timestamp": "2026-06-06T05:42:23.558Z", "level": "WARNING", "logger": "test", "message": "测试 WARN 日志", "warning": "test warning"}
+{"timestamp": "2026-06-06T05:42:23.558Z", "level": "ERROR", "logger": "test", "message": "测试 ERROR 日志", "error_context": "test context", "error": {"type": "ValueError", "message": "测试错误", "stack": ["Traceback (most recent call last):\n", "  File \"<string>\", line 8, in <module>\n    raise ValueError('测试错误')\n", "ValueError: 测试错误\n"]}}
+{"timestamp": "2026-06-06T05:43:54.100Z", "level": "WARNING", "logger": "analyzer.nl_intent", "message": "聚合方式关键词未匹配，使用默认 sum", "query": "各品类销售额占比饼图"}
+{"timestamp": "2026-06-06T05:44:26.267Z", "level": "WARNING", "logger": "analyzer.nl_intent", "message": "聚合方式关键词未匹配，使用默认 sum", "query": "对比电子产品在三个区域的销量"}
+{"timestamp": "2026-06-06T05:49:25.863Z", "level": "WARNING", "logger": "analyzer.nl_intent", "message": "聚合方式关键词未匹配，使用默认 sum", "query": "展示利润和销售额的关系散点图"}
+{"timestamp": "2026-06-06T05:49:25.864Z", "level": "WARNING", "logger": "analyzer.nl_intent", "message": "分组列未匹配到关键词", "query": "展示利润和销售额的关系散点图", "available_categorical": ["Region", "Category"], "hint_triggered": false}

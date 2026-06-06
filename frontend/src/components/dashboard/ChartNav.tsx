@@ -1,5 +1,8 @@
 import { useAnalysisStore } from '../../store/analysisStore'
 import type { ChartType } from '../../types'
+import { getLogger } from '../../utils/logger'
+
+const logger = getLogger('components.ChartNav')
 
 interface ChartItem {
   id: string
@@ -30,7 +33,17 @@ export default function ChartNav({ charts }: Props) {
           charts.map((c) => (
             <button
               key={c.id}
-              onClick={() => setActiveChart(c.id as ChartType)}
+              onClick={() => {
+                if (activeChart !== c.id) {
+                  logger.info('用户切换图表', {
+                    from: activeChart,
+                    to: c.id,
+                    chart_label: c.label,
+                    event: 'chart_switch',
+                  })
+                }
+                setActiveChart(c.id as ChartType)
+              }}
               className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-all ${
                 activeChart === c.id
                   ? 'bg-gradient-to-r from-cockpit-primary/20 to-cockpit-purple/10 border border-cockpit-primary/40 shadow-md shadow-cockpit-primary/10'

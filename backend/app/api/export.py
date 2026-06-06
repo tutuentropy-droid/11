@@ -4,6 +4,10 @@ import json
 import os
 import tempfile
 
+from ..utils import get_logger
+
+logger = get_logger("api.export")
+
 router = APIRouter(prefix="/api", tags=["export"])
 
 
@@ -246,6 +250,11 @@ window.addEventListener('resize', () => {
 
 @router.post("/export/{task_id}", response_class=HTMLResponse)
 async def export_report(task_id: str, request: Request):
+    logger.info(
+        "报告导出请求",
+        task_id=task_id,
+        event="export_start",
+    )
     cache_dir = os.path.join(tempfile.gettempdir(), "datainsight_cache")
     cache_path = os.path.join(cache_dir, f"{task_id}.json")
     data = None
@@ -253,18 +262,36 @@ async def export_report(task_id: str, request: Request):
         with open(cache_path, "r", encoding="utf-8") as f:
             data = json.load(f)
     if data is None:
+        logger.warning(
+            "导出失败: 任务不存在",
+            task_id=task_id,
+            event="export_error",
+        )
         raise HTTPException(404, "任务不存在或已过期，请重新上传分析")
 
     try:
         body = await request.json()
         if isinstance(body, dict):
             data["view_config"] = body
+            logger.info(
+                "报告导出包含视图配置",
+                task_id=task_id,
+                view_config_keys=list(body.keys()),
+            )
     except Exception:
         pass
 
     data_json = json.dumps(data, ensure_ascii=False, default=str)
     title = data.get("dataset", {}).get("name", "Report")
     html = REPORT_TEMPLATE.replace("__DATA_JSON__", data_json).replace("{title}", title)
+
+    logger.info(
+        "报告导出完成",
+        task_id=task_id,
+        title=title,
+        html_size=len(html),
+        event="export_success",
+    )
 
     return HTMLResponse(
         content=html,

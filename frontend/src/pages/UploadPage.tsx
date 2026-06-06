@@ -3,6 +3,9 @@ import { useDropzone } from 'react-dropzone'
 import { useNavigate } from 'react-router-dom'
 import { useAnalysisStore } from '../store/analysisStore'
 import { uploadAndAnalyze, uploadAndCompare } from '../services/api'
+import { getLogger } from '../utils/logger'
+
+const logger = getLogger('pages.UploadPage')
 
 const ACCEPTED = {
   'text/csv': ['.csv'],
@@ -158,14 +161,35 @@ export default function UploadPage() {
 
   const handleSingleFile = useCallback(
     async (file: File) => {
+      logger.info('用户上传文件', {
+        filename: file.name,
+        size_bytes: file.size,
+        type: file.type,
+        mode: 'single',
+        event: 'user_upload',
+      })
       setError(null)
       setLoading(true)
       setProgress(5)
       try {
         const data = await uploadAndAnalyze(file, (p) => setProgress(p))
         setResult(data)
+        logger.info('文件分析成功，即将跳转仪表盘', {
+          filename: file.name,
+          task_id: data.task_id,
+          event: 'upload_navigate',
+        })
         setTimeout(() => navigate('/dashboard'), 400)
       } catch (e: any) {
+        logger.error(
+          '文件上传失败',
+          e,
+          {
+            filename: file.name,
+            error_message: e?.response?.data?.detail || e?.message,
+            event: 'upload_error',
+          },
+        )
         setError(e?.response?.data?.detail || e?.message || '上传失败')
         setLoading(false)
       }
@@ -175,6 +199,13 @@ export default function UploadPage() {
 
   const handleCompare = useCallback(async () => {
     if (!fileA || !fileB) return
+    logger.info('用户启动双文件对比分析', {
+      file_a: fileA ? { name: fileA.name, size_bytes: fileA.size } : null,
+      file_b: fileB ? { name: fileB.name, size_bytes: fileB.size } : null,
+      label_a: labelA || undefined,
+      label_b: labelB || undefined,
+      event: 'user_compare_upload',
+    })
     setError(null)
     setLoading(true)
     setProgress(5)
@@ -186,8 +217,20 @@ export default function UploadPage() {
         (p) => setProgress(p),
       )
       setCompareResult(data)
+      logger.info('对比分析成功，即将跳转对比页', {
+        compare_id: data.compare_id,
+        event: 'compare_navigate',
+      })
       setTimeout(() => navigate('/compare'), 400)
     } catch (e: any) {
+      logger.error(
+        '对比分析失败',
+        e,
+        {
+          error_message: e?.response?.data?.detail || e?.message,
+          event: 'compare_error',
+        },
+      )
       setError(e?.response?.data?.detail || e?.message || '对比分析失败')
       setLoading(false)
     }
@@ -229,7 +272,10 @@ export default function UploadPage() {
 
         <div className="flex justify-center gap-2 mb-6">
           <button
-            onClick={() => setMode('single')}
+            onClick={() => {
+              setMode('single')
+              logger.info('用户切换到单文件分析模式', { event: 'mode_switch', mode: 'single' })
+            }}
             className={`px-6 py-2 rounded-lg font-mono text-sm transition-all ${
               mode === 'single'
                 ? 'bg-cockpit-primary/20 text-cockpit-cyan border border-cockpit-cyan/50'
@@ -239,7 +285,10 @@ export default function UploadPage() {
             ◈ 单文件分析
           </button>
           <button
-            onClick={() => setMode('compare')}
+            onClick={() => {
+              setMode('compare')
+              logger.info('用户切换到双文件对比模式', { event: 'mode_switch', mode: 'compare' })
+            }}
             className={`px-6 py-2 rounded-lg font-mono text-sm transition-all ${
               mode === 'compare'
                 ? 'bg-cockpit-purple/20 text-cockpit-purple border border-cockpit-purple/50'

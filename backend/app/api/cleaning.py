@@ -12,6 +12,9 @@ from ..analyzer.cleaner import (
 from ..analyzer.engine import AnalysisEngine
 from ..analyzer.quality_scanner import scan_data_quality
 from ..api.upload import _cache
+from ..utils import get_logger, StepTimer
+
+logger = get_logger("api.cleaning")
 
 router = APIRouter(prefix="/api", tags=["cleaning"])
 
@@ -26,13 +29,30 @@ def _persist_result(task_id: str, result: AnalysisResult) -> None:
 
 @router.post("/clean", response_model=CleanResult)
 async def clean_data(request: CleanRequest):
+    logger.info(
+        "数据清洗请求",
+        task_id=request.task_id,
+        issue_index=request.issue_index,
+        fix_all=request.fix_all,
+        event="clean_start",
+    )
     task_id = request.task_id
     df = get_cached_dataframe(task_id)
     if df is None:
+        logger.warning(
+            "清洗失败: 任务不存在",
+            task_id=task_id,
+            event="clean_error",
+        )
         raise HTTPException(404, "任务不存在或已过期，请重新上传文件")
 
     current_result = _cache.get(task_id)
     if not current_result or not current_result.quality_report:
+        logger.warning(
+            "清洗失败: 未找到数据质量报告",
+            task_id=task_id,
+            event="clean_error",
+        )
         raise HTTPException(400, "未找到数据质量报告")
 
     quality_before = current_result.quality_report.quality.model_copy(deep=True)
@@ -46,10 +66,23 @@ async def clean_data(request: CleanRequest):
         indices_to_process = [i for i, iss in enumerate(issues) if not iss.fixed and iss.suggestion]
     elif request.issue_index is not None:
         if request.issue_index < 0 or request.issue_index >= len(issues):
+            logger.warning(
+                "清洗失败: 问题索引超出范围",
+                task_id=task_id,
+                issue_index=request.issue_index,
+                total_issues=len(issues),
+                event="clean_error",
+            )
             raise HTTPException(400, "问题索引超出范围")
         indices_to_process = [request.issue_index]
     else:
         raise HTTPException(400, "请指定 issue_index 或设置 fix_all=True")
+
+    logger.info(
+        "开始处理数据质量问题",
+        task_id=task_id,
+        issues_to_process=len(indices_to_process),
+    )
 
     for idx in indices_to_process:
         issue = issues[idx]
@@ -62,16 +95,32 @@ async def clean_data(request: CleanRequest):
             issue.fixed = True
             fixed_issues.append(idx)
             fixed_count += n_fixed
+            logger.info(
+                "问题修复成功",
+                task_id=task_id,
+                issue_index=idx,
+                issue_type=issue.issue_type,
+                fixed_points=n_fixed,
+            )
 
-    engine = AnalysisEngine()
-    filename = current_result.dataset.name
-    updated_result = engine.analyze(df, filename=filename)
-    updated_result.task_id = task_id
+    with StepTimer(logger, "重新分析数据", task_id=task_id):
+        engine = AnalysisEngine()
+        filename = current_result.dataset.name
+        updated_result = engine.analyze(df, filename=filename)
+        updated_result.task_id = task_id
 
     cache_dataframe(task_id, df)
     _persist_result(task_id, updated_result)
 
     quality_after = updated_result.quality_report.quality if updated_result.quality_report else None
+
+    logger.info(
+        "数据清洗完成",
+        task_id=task_id,
+        fixed_issue_count=len(fixed_issues),
+        fixed_points=fixed_count,
+        event="clean_success",
+    )
 
     return CleanResult(
         task_id=task_id,
