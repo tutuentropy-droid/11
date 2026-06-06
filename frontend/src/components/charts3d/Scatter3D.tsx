@@ -67,7 +67,7 @@ export default function Scatter3D() {
     let tick = 0
     const animate = () => {
       tick++
-      const opacity = 0.5 + Math.sin(tick / 12) * 0.5
+      const opacity = 0.7 + Math.sin(tick / 12) * 0.3
       const size = 18 + Math.sin(tick / 10) * 6
       chart.setOption({
         series: [
@@ -106,6 +106,9 @@ export default function Scatter3D() {
         backgroundColor: 'rgba(17,24,39,0.95)',
         borderColor: 'rgba(59,130,246,0.3)',
         textStyle: { color: '#e2e8f0' },
+        hideDelay: 8000,
+        enterable: true,
+        triggerOn: 'mousemove|click',
         formatter: (p: any) => {
           const d = p.data
           const isOutlier = p.seriesName === '异常点'

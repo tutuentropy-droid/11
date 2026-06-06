@@ -112,6 +112,9 @@ export default function Pie3D() {
         backgroundColor: 'rgba(17,24,39,0.95)',
         borderColor: 'rgba(59,130,246,0.3)',
         textStyle: { color: '#e2e8f0' },
+        hideDelay: 8000,
+        enterable: true,
+        triggerOn: 'mousemove|click',
         formatter: (p: any) => {
           const d = p.series?.[0]?.pieData
           if (!d) return ''

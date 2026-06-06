@@ -72,7 +72,7 @@ export default function Timeseries3D() {
     const animate = () => {
       tick++
       const glow = 8 + Math.sin(tick / 15) * 4
-      const outlierOpacity = 0.5 + Math.sin(tick / 10) * 0.5
+      const outlierOpacity = 0.7 + Math.sin(tick / 10) * 0.3
       const outlierSize = 18 + Math.sin(tick / 8) * 6
       chart.setOption({
         series: [
@@ -176,6 +176,9 @@ export default function Timeseries3D() {
         backgroundColor: 'rgba(17,24,39,0.95)',
         borderColor: 'rgba(59,130,246,0.3)',
         textStyle: { color: '#e2e8f0' },
+        hideDelay: 8000,
+        enterable: true,
+        triggerOn: 'mousemove|click',
         formatter: (p: any) => {
           const idx = Math.round(p.data?.[0] ?? p.data?.[3] ?? 0)
           if (p.seriesName === '时序异常点') {

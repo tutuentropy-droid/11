@@ -70,7 +70,7 @@ export default function Histogram3D() {
     let tick = 0
     const animate = () => {
       tick++
-      const pulseOpacity = 0.6 + Math.sin(tick / 8) * 0.4
+      const pulseOpacity = 0.75 + Math.sin(tick / 8) * 0.25
       const seriesData = histogramData.data.map((d) => ({
         value: [d[0], d[1], d[2]],
         itemStyle: d[4]
@@ -107,6 +107,9 @@ export default function Histogram3D() {
         backgroundColor: 'rgba(17,24,39,0.95)',
         borderColor: 'rgba(59,130,246,0.3)',
         textStyle: { color: '#e2e8f0' },
+        hideDelay: 8000,
+        enterable: true,
+        triggerOn: 'mousemove|click',
         formatter: (p: any) => {
           const raw = histogramData.data[p.dataIndex]
           const binVal = Number(raw?.[3] || 0).toLocaleString()

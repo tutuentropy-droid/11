@@ -77,7 +77,7 @@ export default function CompareTimeseries3D() {
       tick++
       const glowA = 8 + Math.sin(tick / 15) * 4
       const glowB = 8 + Math.sin(tick / 15 + 1) * 4
-      const hlOpacity = 0.6 + Math.sin(tick / 8) * 0.4
+      const hlOpacity = 0.75 + Math.sin(tick / 8) * 0.25
       const hlSize = 20 + Math.sin(tick / 6) * 6
 
       const series: any[] = [
@@ -86,7 +86,7 @@ export default function CompareTimeseries3D() {
           type: 'surface',
           data: surfaceA,
           wireframe: { show: false },
-          itemStyle: { opacity: 0.35 },
+          itemStyle: { opacity: 0.35, color: '#06b6d4' },
           shading: 'color',
         },
         {
@@ -94,7 +94,7 @@ export default function CompareTimeseries3D() {
           type: 'surface',
           data: surfaceB,
           wireframe: { show: false },
-          itemStyle: { opacity: 0.35 },
+          itemStyle: { opacity: 0.35, color: '#a78bfa' },
           shading: 'color',
         },
         {
@@ -126,7 +126,7 @@ export default function CompareTimeseries3D() {
       if (highlightedIndices.length > 0) {
         series.push({
           type: 'scatter3D',
-          name: 'A 关键变化',
+          name: `${compareResult?.label_a || 'A'} 关键变化`,
           data: highlightPointsA,
           symbolSize: hlSize,
           itemStyle: {
@@ -138,7 +138,7 @@ export default function CompareTimeseries3D() {
         })
         series.push({
           type: 'scatter3D',
-          name: 'B 关键变化',
+          name: `${compareResult?.label_b || 'B'} 关键变化`,
           data: highlightPointsB,
           symbolSize: hlSize,
           itemStyle: {
@@ -166,43 +166,70 @@ export default function CompareTimeseries3D() {
         backgroundColor: 'rgba(17,24,39,0.95)',
         borderColor: 'rgba(59,130,246,0.3)',
         textStyle: { color: '#e2e8f0' },
+        hideDelay: 10000,
+        enterable: true,
+        triggerOn: 'mousemove|click',
+        extraCssText: 'box-shadow: 0 4px 20px rgba(0,0,0,0.5);',
         formatter: (p: any) => {
           const idx = Math.round(p.data?.[0] ?? p.data?.[3] ?? 0)
           if (idx < 0 || idx >= points.length) return ''
           const pt = points[idx]
-          const isHighlight = p.seriesName?.includes('关键变化')
-          let html = `<div style="font-family:monospace;font-size:12px">`
-          html += `<div style="color:#f59e0b;margin-bottom:6px">${isHighlight ? '🚨 关键变化点' : '📊 对比数据'}</div>`
-          html += `<div>${pt.time}</div>`
-          html += `<div style="margin-top:4px;color:#06b6d4">${compareResult?.label_a || 'A'}: <b>${Number(pt.value_a).toLocaleString()}</b></div>`
-          html += `<div style="color:#a78bfa">${compareResult?.label_b || 'B'}: <b>${Number(pt.value_b).toLocaleString()}</b></div>`
+          const labelA = compareResult?.label_a || '数据集 A'
+          const labelB = compareResult?.label_b || '数据集 B'
+          const isHighlightA = p.seriesName?.includes('关键变化') && p.seriesName?.includes(labelA)
+          const isHighlightB = p.seriesName?.includes('关键变化') && p.seriesName?.includes(labelB)
+          const isHighlight = isHighlightA || isHighlightB
+          const isSurface = p.seriesName?.includes('曲面')
+
+          let html = `<div style="font-family:monospace;font-size:12px;min-width:200px">`
+          if (isHighlight) {
+            const hlColor = isHighlightA ? '#ef4444' : '#f59e0b'
+            html += `<div style="color:${hlColor};margin-bottom:8px;font-weight:bold">🚨 关键变化点 · ${isHighlightA ? labelA : labelB}</div>`
+          } else if (isSurface) {
+            html += `<div style="color:#94a3b8;margin-bottom:8px">🌊 曲面数据</div>`
+          } else {
+            html += `<div style="color:#06b6d4;margin-bottom:8px;font-weight:bold">📊 时序对比数据</div>`
+          }
+          html += `<div style="color:#e2e8f0;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid rgba(59,130,246,0.2)">⏰ ${pt.time}</div>`
+          html += `<div style="margin-top:6px;color:#06b6d4">● ${labelA}: <b style="color:#e2e8f0">${Number(pt.value_a).toLocaleString()}</b></div>`
+          html += `<div style="color:#a78bfa">● ${labelB}: <b style="color:#e2e8f0">${Number(pt.value_b).toLocaleString()}</b></div>`
           if (pt.diff !== undefined) {
             const sign = pt.diff >= 0 ? '+' : ''
-            html += `<div style="margin-top:4px">差值: <b>${sign}${Number(pt.diff).toLocaleString()}</b></div>`
+            html += `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(59,130,246,0.15)">差值 (B - A): <b style="color:#e2e8f0">${sign}${Number(pt.diff).toLocaleString()}</b></div>`
           }
           if (pt.diff_pct !== undefined) {
             const color = pt.diff_pct >= 0 ? '#22c55e' : '#ef4444'
-            const sign = pt.diff_pct >= 0 ? '+' : ''
-            html += `<div style="color:${color}">变化: <b>${sign}${pt.diff_pct.toFixed(1)}%</b></div>`
+            const sign = pt.diff_pct >= 0 ? '↑' : '↓'
+            html += `<div style="color:${color}">变化率: <b>${sign} ${Math.abs(pt.diff_pct).toFixed(2)}%</b></div>`
+            if (Math.abs(pt.diff_pct) >= 20) {
+              html += `<div style="color:#f59e0b;margin-top:4px">⚠ 显著变化 (≥20%)</div>`
+            }
+          }
+          if (!isHighlight && !isSurface) {
+            html += `<div style="color:#64748b;margin-top:8px;padding-top:6px;border-top:1px solid rgba(59,130,246,0.15);font-size:11px">💡 点击可锁定此提示框</div>`
           }
           html += '</div>'
           return html
         },
       },
       legend: {
-        data: [compareResult?.label_a || '数据集 A', compareResult?.label_b || '数据集 B'],
+        data: [
+          { name: compareResult?.label_a || '数据集 A', itemStyle: { color: '#06b6d4' } },
+          { name: compareResult?.label_b || '数据集 B', itemStyle: { color: '#a78bfa' } },
+          ...(highlightedIndices.length > 0 ? [
+            { name: `${compareResult?.label_a || 'A'} 关键变化`, itemStyle: { color: '#ef4444' } },
+            { name: `${compareResult?.label_b || 'B'} 关键变化`, itemStyle: { color: '#f59e0b' } },
+          ] : []),
+        ],
         textStyle: { color: '#94a3b8' },
         top: 0,
         right: 10,
+        itemWidth: 14,
+        itemHeight: 10,
+        itemGap: 10,
       },
       visualMap: {
         show: false,
-        dimension: 2,
-        min: minV,
-        max: maxV,
-        inRange: {
-          color: ['#1e293b', '#3b82f6', '#06b6d4'],
-        },
       },
       xAxis3D: {
         type: 'value',
