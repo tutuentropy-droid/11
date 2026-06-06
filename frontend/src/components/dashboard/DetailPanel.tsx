@@ -1,5 +1,18 @@
+import { useState } from 'react'
 import { useAnalysisStore } from '../../store/analysisStore'
 import type { ColumnInfo } from '../../types'
+
+const PIE_COLORS = ['#3b82f6', '#06b6d4', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#ec4899', '#14b8a6']
+
+const INSIGHT_LABELS: Record<string, string> = {
+  column: '字段',
+  category: '分类',
+  count: '数量',
+  percentage: '占比',
+  col1: '字段1',
+  col2: '字段2',
+  r: '相关系数 r',
+}
 
 function typeColor(t: ColumnInfo['type']) {
   return {
@@ -26,6 +39,23 @@ export default function DetailPanel() {
   const selectedPoint = useAnalysisStore((s) => s.selectedPoint)
   const selectedInsight = useAnalysisStore((s) => s.selectedInsight)
   const columns = result?.columns || []
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set())
+
+  const toggleCat = (col: string) => {
+    setExpandedCats((prev) => {
+      const next = new Set(prev)
+      if (next.has(col)) next.delete(col)
+      else next.add(col)
+      return next
+    })
+  }
+
+  const findCategoryColor = (columnName: string, categoryName: string) => {
+    const freq = result?.categorical_freq?.find((f) => f.column === columnName)
+    if (!freq) return PIE_COLORS[0]
+    const idx = freq.values.findIndex((v) => v.name === categoryName)
+    return idx >= 0 ? PIE_COLORS[idx % PIE_COLORS.length] : PIE_COLORS[0]
+  }
 
   return (
     <div className="glass-panel relative p-4 h-[680px] flex flex-col">
@@ -43,12 +73,52 @@ export default function DetailPanel() {
             <div className="text-sm text-cockpit-text mb-3">{selectedInsight.text}</div>
             {selectedInsight.details && (
               <div className="space-y-1.5 text-xs">
-                {Object.entries(selectedInsight.details).map(([k, v]) => (
-                  <div key={k} className="flex justify-between">
-                    <span className="text-cockpit-muted">{k}</span>
-                    <span className="text-cockpit-cyan font-mono">{String(v)}</span>
-                  </div>
-                ))}
+                {Object.entries(selectedInsight.details).map(([k, v]) => {
+                  const label = INSIGHT_LABELS[k] || k
+                  if (k === 'category') {
+                    const color = selectedInsight.details?.column
+                      ? findCategoryColor(String(selectedInsight.details.column), String(v))
+                      : PIE_COLORS[0]
+                    return (
+                      <div key={k} className="flex justify-between items-center gap-2">
+                        <span className="text-cockpit-muted">{label}</span>
+                        <span className="flex items-center gap-1.5">
+                          <span
+                            className="inline-block w-3 h-3 rounded-sm"
+                            style={{ backgroundColor: color }}
+                          />
+                          <span className="text-cockpit-text font-mono truncate max-w-[140px]" title={String(v)}>
+                            {String(v)}
+                          </span>
+                        </span>
+                      </div>
+                    )
+                  }
+                  if (k === 'percentage') {
+                    return (
+                      <div key={k} className="flex justify-between items-center gap-2">
+                        <span className="text-cockpit-muted">{label}</span>
+                        <span className="text-cockpit-purple font-mono">{String(v)}%</span>
+                      </div>
+                    )
+                  }
+                  if (k === 'r') {
+                    return (
+                      <div key={k} className="flex justify-between items-center gap-2">
+                        <span className="text-cockpit-muted">{label}</span>
+                        <span className="text-cockpit-cyan font-mono">{Number(v).toFixed(4)}</span>
+                      </div>
+                    )
+                  }
+                  return (
+                    <div key={k} className="flex justify-between gap-2">
+                      <span className="text-cockpit-muted">{label}</span>
+                      <span className="text-cockpit-cyan font-mono truncate max-w-[160px]" title={String(v)}>
+                        {typeof v === 'number' ? v.toLocaleString() : String(v)}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             )}
             <div className="mt-3 text-xs text-cockpit-muted">
@@ -124,21 +194,55 @@ export default function DetailPanel() {
                     </div>
                   </div>
                 )}
-                {col.categories && col.categories.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    {col.categories.slice(0, 3).map((cat) => (
-                      <div key={cat.name} className="flex items-center gap-2">
-                        <div className="flex-1 h-1.5 bg-cockpit-panel rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-cockpit-purple to-cockpit-primary"
-                            style={{ width: `${cat.percentage}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-mono text-cockpit-muted w-10 text-right">{cat.percentage}%</span>
+                {col.categories && col.categories.length > 0 && (() => {
+                  const isExpanded = expandedCats.has(col.name)
+                  const total = col.categories.reduce((s, c) => s + c.count, 0)
+                  const displayCats = isExpanded ? col.categories : col.categories.slice(0, 5)
+                  return (
+                    <div className="mt-2.5">
+                      <div className="space-y-1.5">
+                        {displayCats.map((cat, i) => {
+                          const color = findCategoryColor(col.name, cat.name)
+                          const actualPct = total > 0 ? (cat.count / total) * 100 : cat.percentage
+                          return (
+                            <div key={cat.name} className="flex items-center gap-2">
+                              <span
+                                className="inline-block w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                                style={{ backgroundColor: color }}
+                              />
+                              <span
+                                className="text-xs text-cockpit-muted truncate flex-shrink-0 w-[90px]"
+                                title={cat.name}
+                              >
+                                {cat.name.length > 10 ? cat.name.slice(0, 10) + '…' : cat.name}
+                              </span>
+                              <div className="flex-1 h-1.5 bg-cockpit-panel rounded-full overflow-hidden min-w-0">
+                                <div
+                                  className="h-full rounded-full"
+                                  style={{ width: `${actualPct}%`, backgroundColor: color }}
+                                />
+                              </div>
+                              <span className="text-xs font-mono text-cockpit-cyan flex-shrink-0 w-[42px] text-right">
+                                {actualPct.toFixed(1)}%
+                              </span>
+                              <span className="text-xs font-mono text-cockpit-muted/60 flex-shrink-0 w-[50px] text-right">
+                                ({cat.count.toLocaleString()})
+                              </span>
+                            </div>
+                          )
+                        })}
                       </div>
-                    ))}
-                  </div>
-                )}
+                      {col.categories.length > 5 && (
+                        <button
+                          onClick={() => toggleCat(col.name)}
+                          className="mt-2 text-xs text-cockpit-primary hover:text-cockpit-cyan transition-colors font-mono"
+                        >
+                          {isExpanded ? '▲ 收起' : `▼ 展开剩余 ${col.categories.length - 5} 项`}
+                        </button>
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
             ))}
           </div>

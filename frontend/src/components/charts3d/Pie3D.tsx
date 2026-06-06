@@ -13,6 +13,7 @@ export default function Pie3D() {
 
   const categories = result?.categorical_freq || []
   const [activeCol, setActiveCol] = useState(categories[0]?.column || '')
+  const [autoRotate, setAutoRotate] = useState(true)
 
   useEffect(() => {
     if (!activeCol && categories.length > 0) {
@@ -123,6 +124,28 @@ export default function Pie3D() {
           `
         },
       },
+      legend: {
+        show: true,
+        type: 'scroll',
+        orient: 'vertical',
+        right: 10,
+        top: 40,
+        bottom: 40,
+        textStyle: { color: '#94a3b8', fontSize: 11 },
+        itemWidth: 12,
+        itemHeight: 12,
+        itemGap: 8,
+        data: pieData.map((d) => ({
+          name: d.name,
+          itemStyle: { color: d.itemStyle.color },
+        })),
+        formatter: (name: string) => {
+          const item = pieData.find((p) => p.name === name)
+          if (!item) return name
+          const displayName = name.length > 10 ? name.slice(0, 10) + '…' : name
+          return `${displayName}  ${item.percentage}%`
+        },
+      },
       xAxis3D: { min: -1, max: 1, axisLabel: { show: false }, axisLine: { show: false }, splitLine: { show: false } },
       yAxis3D: { min: -1, max: 1, axisLabel: { show: false }, axisLine: { show: false }, splitLine: { show: false } },
       zAxis3D: { min: -1, max: 1, axisLabel: { show: false }, axisLine: { show: false }, splitLine: { show: false } },
@@ -130,7 +153,7 @@ export default function Pie3D() {
         show: false,
         boxHeight: 20,
         viewControl: {
-          autoRotate: true,
+          autoRotate: autoRotate,
           autoRotateSpeed: 8,
           distance: 160,
           alpha: 35,
@@ -163,7 +186,7 @@ export default function Pie3D() {
     const onResize = () => chart.resize()
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [activeCol, categories, setSelectedInsight])
+  }, [activeCol, categories, setSelectedInsight, autoRotate])
 
   if (categories.length === 0) {
     return (
@@ -176,9 +199,11 @@ export default function Pie3D() {
     )
   }
 
+  const activeCat = categories.find((c) => c.column === activeCol)
+
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="flex flex-wrap gap-2 px-4 pt-2 pb-2 z-10">
+      <div className="flex flex-wrap items-center gap-2 px-4 pt-2 pb-2 z-10">
         {categories.map((c) => (
           <button
             key={c.column}
@@ -192,7 +217,34 @@ export default function Pie3D() {
             {c.column}
           </button>
         ))}
+        <div className="flex-1" />
+        <button
+          onClick={() => setAutoRotate(!autoRotate)}
+          className={`px-3 py-1 rounded-md text-xs font-medium transition-all border ${
+            autoRotate
+              ? 'bg-cockpit-primary/20 text-cockpit-cyan border-cockpit-primary/40'
+              : 'bg-cockpit-panel/50 text-cockpit-muted border-cockpit-border hover:text-cockpit-text'
+          }`}
+          title={autoRotate ? '点击停止自动旋转' : '点击开启自动旋转'}
+        >
+          {autoRotate ? '⏸ 停止旋转' : '▶ 自动旋转'}
+        </button>
       </div>
+      {activeCat && activeCat.values.length > 0 && (
+        <div className="px-4 pb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+          {activeCat.values.slice(0, 8).map((v, i) => (
+            <div key={v.name} className="flex items-center gap-1.5">
+              <span
+                className="inline-block w-2.5 h-2.5 rounded-sm"
+                style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }}
+              />
+              <span className="text-cockpit-muted truncate max-w-[120px]" title={v.name}>{v.name}</span>
+              <span className="text-cockpit-cyan font-mono">{v.percentage}%</span>
+              <span className="text-cockpit-muted/60">({v.count.toLocaleString()})</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div ref={ref} className="flex-1" />
     </div>
   )

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { AnalysisResult } from '../types'
+import type { AnalysisResult, CompareResult } from '../types'
 
 const api = axios.create({
   baseURL: '/api',
@@ -10,6 +10,36 @@ export async function uploadAndAnalyze(file: File, onProgress?: (percent: number
   const form = new FormData()
   form.append('file', file)
   const res = await api.post<AnalysisResult>('/upload', form, {
+    onUploadProgress: (e) => {
+      if (onProgress && e.total) {
+        onProgress(Math.min(90, Math.round((e.loaded / e.total) * 50)))
+      }
+    },
+  })
+  if (onProgress) onProgress(100)
+  return res.data
+}
+
+export async function uploadAndCompare(
+  fileA: File,
+  fileB: File,
+  options?: {
+    labelA?: string
+    labelB?: string
+    alignStrategy?: string
+    alignField?: string
+  },
+  onProgress?: (percent: number) => void,
+): Promise<CompareResult> {
+  const form = new FormData()
+  form.append('file_a', fileA)
+  form.append('file_b', fileB)
+  if (options?.labelA) form.append('label_a', options.labelA)
+  if (options?.labelB) form.append('label_b', options.labelB)
+  if (options?.alignStrategy) form.append('align_strategy', options.alignStrategy)
+  if (options?.alignField) form.append('align_field', options.alignField)
+
+  const res = await api.post<CompareResult>('/compare', form, {
     onUploadProgress: (e) => {
       if (onProgress && e.total) {
         onProgress(Math.min(90, Math.round((e.loaded / e.total) * 50)))

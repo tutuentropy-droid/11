@@ -103,3 +103,95 @@ export interface AnalysisResult {
 }
 
 export type ChartType = 'correlation' | 'scatter' | 'histogram' | 'timeseries' | 'pie'
+
+export interface NumericDiff {
+  column: string
+  mean_a?: number
+  mean_b?: number
+  mean_change_pct?: number
+  median_a?: number
+  median_b?: number
+  median_change_pct?: number
+  std_a?: number
+  std_b?: number
+}
+
+export interface CategoricalDiffItem {
+  category: string
+  count_a: number
+  count_b: number
+  count_change: number
+  pct_a: number
+  pct_b: number
+  pct_change: number
+}
+
+export interface CategoricalDiff {
+  column: string
+  items: CategoricalDiffItem[]
+}
+
+export interface TimeseriesDiffPoint {
+  time: string
+  value_a?: number
+  value_b?: number
+  diff?: number
+  diff_pct?: number
+}
+
+export interface TimeseriesDiff {
+  time_column: string
+  value_column: string
+  aligned_points: TimeseriesDiffPoint[]
+  only_in_a: Array<Record<string, any>>
+  only_in_b: Array<Record<string, any>>
+  total_a?: number
+  total_b?: number
+  total_change_pct?: number
+}
+
+export interface CorrelationDiffPair {
+  col1: string
+  col2: string
+  corr_a?: number
+  corr_b?: number
+  corr_diff?: number
+}
+
+export interface CorrelationDiff {
+  common_pairs: CorrelationDiffPair[]
+}
+
+export interface CompareInsight {
+  severity: 'high' | 'medium' | 'low'
+  text: string
+  category: string
+  details?: Record<string, any>
+}
+
+export interface CompareSummary {
+  headline: string
+  insights: CompareInsight[]
+  key_metrics: Array<Record<string, any>>
+}
+
+export interface CompareResult {
+  compare_id?: string
+  dataset_a: AnalysisResult
+  dataset_b: AnalysisResult
+  label_a: string
+  label_b: string
+  common_columns: string[]
+  common_numeric_columns: string[]
+  common_categorical_columns: string[]
+  common_datetime_columns: string[]
+  numeric_diffs: NumericDiff[]
+  categorical_diffs: CategoricalDiff[]
+  timeseries_diff?: TimeseriesDiff
+  correlation_diff?: CorrelationDiff
+  summary: CompareSummary
+  align_strategy: string
+  align_field?: string
+}
+
+export type CompareChartType = 'compare_timeseries' | 'compare_correlation' | 'compare_histogram' | 'compare_numeric' | 'compare_categorical' | 'side_by_side'

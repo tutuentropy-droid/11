@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as echarts from 'echarts'
 import 'echarts-gl'
 import { useAnalysisStore } from '../../store/analysisStore'
@@ -8,6 +8,7 @@ export default function Correlation3D() {
   const chartRef = useRef<echarts.ECharts | null>(null)
   const result = useAnalysisStore((s) => s.result)
   const setSelectedInsight = useAnalysisStore((s) => s.setSelectedInsight)
+  const [autoRotate, setAutoRotate] = useState(true)
 
   useEffect(() => {
     if (!ref.current || !result?.correlations) return
@@ -80,7 +81,7 @@ export default function Correlation3D() {
         boxDepth: 160,
         boxHeight: 100,
         viewControl: {
-          autoRotate: true,
+          autoRotate: autoRotate,
           autoRotateSpeed: 6,
           rotateSensitivity: 1.5,
           zoomSensitivity: 1.2,
@@ -148,7 +149,24 @@ export default function Correlation3D() {
     const onResize = () => chart.resize()
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [result, setSelectedInsight])
+  }, [result, setSelectedInsight, autoRotate])
 
-  return <div ref={ref} className="w-full h-full" />
+  return (
+    <div className="w-full h-full flex flex-col">
+      <div className="flex justify-end px-4 pt-2 pb-1 z-10">
+        <button
+          onClick={() => setAutoRotate(!autoRotate)}
+          className={`px-3 py-1 rounded-md text-xs font-medium transition-all border ${
+            autoRotate
+              ? 'bg-cockpit-primary/20 text-cockpit-cyan border-cockpit-primary/40'
+              : 'bg-cockpit-panel/50 text-cockpit-muted border-cockpit-border hover:text-cockpit-text'
+          }`}
+          title={autoRotate ? '点击停止自动旋转' : '点击开启自动旋转'}
+        >
+          {autoRotate ? '⏸ 停止旋转' : '▶ 自动旋转'}
+        </button>
+      </div>
+      <div ref={ref} className="flex-1" />
+    </div>
+  )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo } from 'react'
+import { useEffect, useRef, useMemo, useState } from 'react'
 import * as echarts from 'echarts'
 import 'echarts-gl'
 import { useAnalysisStore } from '../../store/analysisStore'
@@ -9,6 +9,7 @@ export default function Timeseries3D() {
   const result = useAnalysisStore((s) => s.result)
   const setSelectedOutlierStory = useAnalysisStore((s) => s.setSelectedOutlierStory)
   const animRef = useRef<number | null>(null)
+  const [autoRotate, setAutoRotate] = useState(true)
 
   const tsData = useMemo(() => {
     const ts = result?.timeseries
@@ -280,7 +281,7 @@ export default function Timeseries3D() {
         boxDepth: 50,
         boxHeight: 120,
         viewControl: {
-          autoRotate: true,
+          autoRotate: autoRotate,
           autoRotateSpeed: 4,
           rotateSensitivity: 1.5,
           zoomSensitivity: 1.2,
@@ -317,7 +318,24 @@ export default function Timeseries3D() {
       window.removeEventListener('resize', onResize)
       if (animRef.current) cancelAnimationFrame(animRef.current)
     }
-  }, [tsData, tsOutlierMap, setSelectedOutlierStory])
+  }, [tsData, tsOutlierMap, setSelectedOutlierStory, autoRotate])
 
-  return <div ref={ref} className="w-full h-full" />
+  return (
+    <div className="w-full h-full flex flex-col">
+      <div className="flex justify-end px-4 pt-2 pb-1 z-10">
+        <button
+          onClick={() => setAutoRotate(!autoRotate)}
+          className={`px-3 py-1 rounded-md text-xs font-medium transition-all border ${
+            autoRotate
+              ? 'bg-cockpit-primary/20 text-cockpit-cyan border-cockpit-primary/40'
+              : 'bg-cockpit-panel/50 text-cockpit-muted border-cockpit-border hover:text-cockpit-text'
+          }`}
+          title={autoRotate ? '点击停止自动旋转' : '点击开启自动旋转'}
+        >
+          {autoRotate ? '⏸ 停止旋转' : '▶ 自动旋转'}
+        </button>
+      </div>
+      <div ref={ref} className="flex-1" />
+    </div>
+  )
 }
